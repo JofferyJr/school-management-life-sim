@@ -1,0 +1,4 @@
+2D Classroom Asset Pack by Styloo
+Source pack supplied by the project owner for use in Campus Life Architect.
+Original pack readme: https://styloo.itch.io/
+Only a small transformed subset is included in this repository atlas.

@@ -1,4 +1,5 @@
 import { getTile } from './tileMap.js';
+import { ATLAS_PATH, CLASSROOM_PACK_FRAMES, getObjectSpriteFrame } from '../assets/classroomPack.js';
 
 const BASE_TILE_SIZE = 26;
 const ZONE_TINT = {
@@ -13,6 +14,19 @@ function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 
 export function createWorldRenderer(canvas) {
   const ctx = canvas.getContext('2d');
+  const atlas = typeof Image === 'function' ? new Image() : null;
+  let atlasReady = false;
+  if (atlas) {
+    atlas.addEventListener('load', () => { atlasReady = true; });
+    atlas.src = ATLAS_PATH;
+  }
+
+  function drawAtlasFrame(frame, x, y, width, height) {
+    if (!atlasReady || !atlas || !frame) return false;
+    const [sx, sy, sw, sh] = frame.source;
+    ctx.drawImage(atlas, sx, sy, sw, sh, x, y, width, height);
+    return true;
+  }
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -52,6 +66,7 @@ export function createWorldRenderer(canvas) {
     const map = state.world.campus;
     const cam = normalizedCamera(camera);
     const tilePx = BASE_TILE_SIZE * cam.zoom;
+    const objectsById = new Map((map.objects ?? []).map(object => [object.id, object]));
     ctx.clearRect(0, 0, size.width, size.height);
     ctx.fillStyle = '#0b1713';
     ctx.fillRect(0, 0, size.width, size.height);
@@ -70,23 +85,36 @@ export function createWorldRenderer(canvas) {
         ctx.fillStyle = tile.terrain === 'grass' ? '#234f37' : '#31473d';
         ctx.fillRect(p.x, p.y, tilePx, tilePx);
         if (tile.floor) {
-          ctx.fillStyle = tile.floor === 'path' ? '#837b6b' : '#b8b5a8';
-          ctx.fillRect(p.x + 1, p.y + 1, tilePx - 2, tilePx - 2);
+          const drewFloor = tile.floor === 'basic-floor' && drawAtlasFrame(CLASSROOM_PACK_FRAMES.floor, p.x, p.y, tilePx, tilePx);
+          if (!drewFloor) {
+            ctx.fillStyle = tile.floor === 'path' ? '#837b6b' : '#b8b5a8';
+            ctx.fillRect(p.x + 1, p.y + 1, tilePx - 2, tilePx - 2);
+          }
         }
         if (ZONE_TINT[tile.zone]) {
           ctx.fillStyle = ZONE_TINT[tile.zone];
           ctx.fillRect(p.x, p.y, tilePx, tilePx);
         }
         if (tile.wall) {
-          ctx.fillStyle = tile.wall === 'door' ? '#c9965c' : '#2f3433';
-          const thickness = Math.max(3, 5 * cam.zoom);
-          ctx.fillRect(p.x, p.y, tilePx, thickness);
-          if (tile.blocked) ctx.fillRect(p.x, p.y, thickness, tilePx);
+          const wallFrame = tile.wall === 'door' ? CLASSROOM_PACK_FRAMES.door : tile.wall === 'basic-wall' ? CLASSROOM_PACK_FRAMES.wall : null;
+          const drewWall = drawAtlasFrame(wallFrame, p.x, p.y, tilePx, tilePx);
+          if (!drewWall) {
+            ctx.fillStyle = tile.wall === 'door' ? '#c9965c' : '#2f3433';
+            const thickness = Math.max(3, 5 * cam.zoom);
+            ctx.fillRect(p.x, p.y, tilePx, thickness);
+            if (tile.blocked) ctx.fillRect(p.x, p.y, thickness, tilePx);
+          }
         }
         if (tile.objectId) {
-          ctx.fillStyle = '#315f78';
-          const inset = Math.max(4, tilePx * .24);
-          ctx.fillRect(p.x + inset, p.y + inset, tilePx - inset * 2, tilePx - inset * 2);
+          const object = objectsById.get(tile.objectId);
+          const objectFrame = getObjectSpriteFrame(object?.type);
+          const objectInset = Math.max(1, tilePx * .04);
+          const drewObject = drawAtlasFrame(objectFrame, p.x + objectInset, p.y + objectInset, tilePx - objectInset * 2, tilePx - objectInset * 2);
+          if (!drewObject) {
+            ctx.fillStyle = '#315f78';
+            const inset = Math.max(4, tilePx * .24);
+            ctx.fillRect(p.x + inset, p.y + inset, tilePx - inset * 2, tilePx - inset * 2);
+          }
         }
         ctx.strokeStyle = 'rgba(213,236,224,.10)';
         ctx.lineWidth = 1;
