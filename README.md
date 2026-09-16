@@ -96,3 +96,7 @@ docs/             approved design, plan, and smoke checklist
 ## Current limitations
 
 V0.1 is a foundation release. It does not yet simulate the full expandable town, enterable family homes, advanced clubs, deep social relationships, full discipline cases, detailed staff careers, graduation/alumni progression, or every curriculum-specific rule described in the long-term design. The current art is intentionally functional and lightweight so the simulation systems can be tested before a larger visual asset pass.
+
+## Visual asset credits
+
+Campus tiles and selected classroom furniture in this release use a small optimized subset of the **2D Classroom Asset Pack by Styloo**, supplied for this project by the repository owner. The optimized atlas and credit note are in `assets/classroom-pack/`; unsupported object types continue to use the built-in fallback renderer.
